@@ -79,3 +79,23 @@ exports.registerCriminal = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// Get all Criminals for the Admin/DCP list
+exports.getAllCriminals = async (req, res) => {
+    try {
+        const result = await db.query('SELECT aadhaar_number, name, case_number, is_compliant, mobile FROM externed_individuals ORDER BY created_at DESC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Get all Officers for the Admin list
+exports.getAllOfficers = async (req, res) => {
+    try {
+        const result = await db.query('SELECT id, name, buckle_number, rank, role, police_station FROM officers ORDER BY role ASC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

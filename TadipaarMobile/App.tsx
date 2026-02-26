@@ -4,11 +4,11 @@ import { createStackNavigator } from '@react-navigation/stack';
 
 // 1. Import all your new dashboards
 import LoginScreen from './src/screens/LoginScreen';
-import AdminDashboard from './src/screens/AdminDashboard';
-import DCPDashboard from './src/screens/DCPDashboard.tsx';
-import ACPDashboard from './src/screens/ACPDashboard.tsx';
-import OfficerDashboard from './src/screens/OfficerDashboard.tsx';
-import CriminalDashboard from './src/screens/CriminalDashboard.tsx';
+import AdminDashboard from './src/screens/dashboards/AdminDashboard.tsx';
+import DCPDashboard from './src/screens/dashboards/DCPDashboard.tsx';
+import ACPDashboard from './src/screens/dashboards/ACPDashboard.tsx';
+import OfficerDashboard from './src/screens/dashboards/OfficerDashboard.tsx';
+import CriminalDashboard from './src/screens/dashboards/CriminalDashboard.tsx';
 
 const Stack = createStackNavigator();
 
