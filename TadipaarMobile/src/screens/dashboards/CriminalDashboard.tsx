@@ -1,156 +1,109 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
-import { Camera, useCameraDevice, CameraPermissionStatus } from 'react-native-vision-camera';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { Camera, useCameraDevice } from 'react-native-vision-camera';
 import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '../../api/client';
 
 const CriminalDashboard = () => {
-  const camera = useRef<Camera>(null);
-  const [cameraPermission, setCameraPermission] = useState<CameraPermissionStatus>('not-determined');
+  const [showCamera, setShowCamera] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastCheckIn, setLastCheckIn] = useState<string | null>(null);
-
-  // 1. Select the Front Camera Device
+  const [userName, setUserName] = useState('Individual');
+  const camera = useRef<Camera>(null);
   const device = useCameraDevice('front');
 
-  // 2. Request Permissions on Mount
   useEffect(() => {
-    const checkPermissions = async () => {
-      const status = await Camera.requestCameraPermission();
-      setCameraPermission(status);
-      
-      // Also request Location permission
-      Geolocation.requestAuthorization('whenInUse');
+    const getUser = async () => {
+      const data = await AsyncStorage.getItem('user');
+      if (data) setUserName(JSON.parse(data).name);
     };
-    checkPermissions();
+    getUser();
   }, []);
 
-  const handleVerification = async () => {
+  const handleCapture = async () => {
     if (!camera.current) return;
     setIsSubmitting(true);
-
     try {
-      // Step A: Capture Photo
-      const photo = await camera.current.takePhoto({
-        flash: 'off',
-        enableShutterSound: true,
-      });
-
-      // Step B: Get Current GPS Coordinates
+      const photo = await camera.current.takePhoto();
       Geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          
-          // Step C: Get User ID from Storage
+        async (pos) => {
           const userData = await AsyncStorage.getItem('user');
-          const user = userData ? JSON.parse(userData) : null;
-
-          // Step D: Prepare Form Data for Backend
+          const user = JSON.parse(userData || '{}');
+          
           const formData = new FormData();
-          formData.append('aadhaar_number', user?.id || '');
-          formData.append('latitude', latitude.toString());
-          formData.append('longitude', longitude.toString());
+          formData.append('aadhaar_number', user.id);
+          formData.append('latitude', pos.coords.latitude.toString());
+          formData.append('longitude', pos.coords.longitude.toString());
           formData.append('photo', {
             uri: `file://${photo.path}`,
-            name: 'verification.jpg',
+            name: 'checkin.jpg',
             type: 'image/jpeg',
           } as any);
 
-          // Step E: Upload to Server
-          const response = await apiClient.post('/auth/check-in', formData, {
+          await apiClient.post('/auth/check-in', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
           });
 
-          setLastCheckIn(new Date().toLocaleTimeString());
-          Alert.alert("✅ Verified", "Your location and photo have been logged.");
+          Alert.alert("Success", "Verification uploaded successfully.");
+          setShowCamera(false);
           setIsSubmitting(false);
         },
-        (error) => {
-          Alert.alert("GPS Error", "Please enable location services.");
-          setIsSubmitting(false);
-        },
-        { enableHighAccuracy: true, timeout: 15000 }
+        (err) => Alert.alert("GPS Error", err.message),
+        { enableHighAccuracy: true }
       );
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Failed to capture verification data.");
+    } catch (e) {
+      Alert.alert("Error", "Capture failed");
       setIsSubmitting(false);
     }
   };
 
-  // --- UI Conditional Rendering ---
-  if (cameraPermission === 'not-determined') return <ActivityIndicator style={styles.center} />;
-  if (cameraPermission !== 'granted') return <View style={styles.center}><Text>Camera Access Denied</Text></View>;
-  if (!device) return <View style={styles.center}><Text>No Camera Detected</Text></View>;
+  // CAMERA VIEW
+  if (showCamera) {
+    return (
+      <View style={styles.fullScreen}>
+        {!device ? <Text>Camera not available</Text> : (
+          <Camera ref={camera} style={StyleSheet.absoluteFill} device={device} isActive={true} photo={true} />
+        )}
+        <View style={styles.cameraOverlay}>
+          <TouchableOpacity style={styles.captureBtn} onPress={handleCapture}>
+            {isSubmitting ? <ActivityIndicator color="#fff" /> : <View style={styles.innerCircle} />}
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.backBtn} onPress={() => setShowCamera(false)}>
+            <Text style={styles.backBtnText}>✕ Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
+  // DASHBOARD VIEW
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Identity Verification</Text>
-        <Text style={styles.subtitle}>Position your face in the camera frame</Text>
+      <View style={styles.card}>
+        <Text style={styles.welcome}>Jai Hind, {userName}</Text>
+        <Text style={styles.status}>Status: Under Monitoring</Text>
       </View>
-
-      <View style={styles.cameraContainer}>
-        <Camera
-          ref={camera}
-          style={styles.preview}
-          device={device}
-          isActive={true}
-          photo={true}
-        />
-        {/* Overlay for framing face */}
-        <View style={styles.overlay} />
-      </View>
-
-      <View style={styles.bottomSection}>
-        {lastCheckIn && (
-          <Text style={styles.statusText}>Last Check-in: {lastCheckIn}</Text>
-        )}
-        
-        <TouchableOpacity 
-          style={[styles.btn, isSubmitting && styles.btnDisabled]} 
-          onPress={handleVerification}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.btnText}>UPLOAD GEOTAGGED PHOTO</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+      
+      <TouchableOpacity style={styles.mainBtn} onPress={() => setShowCamera(true)}>
+        <Text style={styles.mainBtnText}>📸 START DAILY VERIFICATION</Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { padding: 40, alignItems: 'center', backgroundColor: '#fff' },
-  title: { fontSize: 22, fontWeight: 'bold', color: '#d32f2f' },
-  subtitle: { fontSize: 14, color: '#666', marginTop: 5 },
-  cameraContainer: { flex: 1, overflow: 'hidden' },
-  preview: { flex: 1 },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 50,
-    borderColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 20,
-    margin: 20,
-  },
-  bottomSection: { padding: 30, backgroundColor: '#fff', alignItems: 'center' },
-  statusText: { marginBottom: 15, color: '#27ae60', fontWeight: 'bold' },
-  btn: { 
-    backgroundColor: '#d32f2f', 
-    paddingVertical: 18, 
-    paddingHorizontal: 40, 
-    borderRadius: 30,
-    width: '100%',
-    alignItems: 'center'
-  },
-  btnDisabled: { backgroundColor: '#999' },
-  btnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  container: { flex: 1, padding: 20, backgroundColor: '#f4f4f4', justifyContent: 'center' },
+  fullScreen: { flex: 1, backgroundColor: '#000' },
+  card: { backgroundColor: '#fff', padding: 30, borderRadius: 15, elevation: 5, marginBottom: 30 },
+  welcome: { fontSize: 22, fontWeight: 'bold', color: '#333' },
+  status: { color: 'green', marginTop: 10, fontWeight: '600' },
+  mainBtn: { backgroundColor: '#d32f2f', padding: 20, borderRadius: 12, alignItems: 'center' },
+  mainBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  cameraOverlay: { position: 'absolute', bottom: 40, width: '100%', alignItems: 'center' },
+  captureBtn: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.3)', justifyContent: 'center', alignItems: 'center' },
+  innerCircle: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff' },
+  backBtn: { marginTop: 20, padding: 10 },
+  backBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
 });
 
 export default CriminalDashboard;

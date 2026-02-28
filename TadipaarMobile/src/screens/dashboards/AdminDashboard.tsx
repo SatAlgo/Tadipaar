@@ -4,39 +4,35 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 const AdminDashboard = ({ navigation }: any) => {
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.header}>DCP Crime Office Portal</Text>
+      <Text style={styles.header}>Pune Police Admin</Text>
       
-      <View style={styles.analyticsBox}>
-        <Text style={styles.analyticsText}>Total Externed: 45</Text>
-        <Text style={[styles.analyticsText, {color: 'red'}]}>Active Breaches: 2</Text>
+      <View style={styles.grid}>
+        <TouchableOpacity style={styles.box} onPress={() => navigation.navigate('RegisterCriminal')}>
+          <Text style={styles.icon}>👤</Text>
+          <Text style={styles.boxText}>Register New Individual</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.box} onPress={() => navigation.navigate('CriminalList')}>
+          <Text style={styles.icon}>📋</Text>
+          <Text style={styles.boxText}>Active Records</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.box} onPress={() => navigation.navigate('MapBoundary')}>
+          <Text style={styles.icon}>📍</Text>
+          <Text style={styles.boxText}>Live Geofence Map</Text>
+        </TouchableOpacity>
       </View>
-
-      <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('RegisterCriminal')}>
-        <Text style={styles.btnText}>Register New Individual</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('MapBoundary')}>
-        <Text style={styles.btnText}>Live District Monitoring</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('CriminalList')}>
-        <Text style={styles.btnText}>Criminal List</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={[styles.btn, {backgroundColor: '#8E8E93'}]} onPress={() => navigation.replace('Login')}>
-        <Text style={styles.btnText}>← Logout / Switch Role</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  header: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-  analyticsBox: { backgroundColor: '#F2F2F7', padding: 20, borderRadius: 15, marginBottom: 30 },
-  analyticsText: { fontSize: 18, fontWeight: '600', marginBottom: 5 },
-  btn: { backgroundColor: '#007AFF', padding: 18, borderRadius: 10, marginBottom: 15, alignItems: 'center' },
-  btnText: { color: '#fff', fontWeight: 'bold' }
+  container: { flex: 1, backgroundColor: '#f8f9fa', padding: 20 },
+  header: { fontSize: 24, fontWeight: 'bold', marginVertical: 20, color: '#1a237e' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  box: { backgroundColor: '#fff', width: '48%', padding: 20, borderRadius: 12, marginBottom: 15, alignItems: 'center', elevation: 3 },
+  icon: { fontSize: 30, marginBottom: 10 },
+  boxText: { textAlign: 'center', fontWeight: '600', color: '#333' }
 });
 
 export default AdminDashboard;
