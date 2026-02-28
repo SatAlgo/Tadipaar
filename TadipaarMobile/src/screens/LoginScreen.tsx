@@ -1,108 +1,60 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, Text, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '../api/client';
 
-interface LoginProps {
-  navigation: any;
-}
-
-const LoginScreen: React.FC<LoginProps> = ({ navigation }) => {
+const LoginScreen = ({ navigation }: any) => {
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!mobile || !password) {
-      Alert.alert("Error", "Please fill all fields");
-      return;
-    }
-
+    if (!mobile || !password) return Alert.alert("Error", "Enter all fields");
     setLoading(true);
     try {
       const response = await apiClient.post('/auth/login', { mobile, password });
       const { token, user } = response.data;
 
-      await AsyncStorage.setItem('userToken', token);
-      await AsyncStorage.setItem('userData', JSON.stringify(user));
+      await AsyncStorage.setItem('token', token);
+      await AsyncStorage.setItem('user', JSON.stringify(user));
 
-      // ROLE-BASED NAVIGATION
-      switch (user.role) {
-        case 'ADMIN':
-          navigation.replace('AdminDashboard');
-          break;
-        case 'DCP':
-          navigation.replace('DCPDashboard');
-          break;
-        case 'ACP':
-          navigation.replace('ACPDashboard');
-          break;
-        case 'OFFICER':
-          navigation.replace('OfficerDashboard');
-          break;
-        case 'CRIMINAL':
-          navigation.replace('CriminalDashboard');
-          break;
-        default:
-          Alert.alert("Error", "Unknown User Role");
-      }
-    } catch (error: any) {
-      Alert.alert("Login Failed", error.response?.data?.message || "Check connection");
+      // Role-based Navigation
+      if (user.role === 'ADMIN') navigation.replace('AdminDashboard');
+      else if (user.role === 'DCP') navigation.replace('DCPDashboard');
+      else if (user.role === 'CRIMINAL') navigation.replace('CriminalDashboard');
+      else Alert.alert("Access Denied", "Dashboard not found for this role");
+
+    } catch (err: any) {
+      Alert.alert("Login Failed", err.response?.data?.message || "Check connection");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <View style={styles.innerContainer}>
-        <Text style={styles.title}>🛡️ TADIPAAR MONITOR</Text>
-        <Text style={styles.subtitle}>Pune Police Department</Text>
+    <View style={styles.container}>
+      <Text style={styles.logo}>🛡️ Tadipaar</Text>
+      <TextInput placeholder="Mobile Number" style={styles.input} keyboardType="phone-pad" onChangeText={setMobile} />
+      <TextInput placeholder="Password" style={styles.input} secureTextEntry onChangeText={setPassword} />
+      
+      <TouchableOpacity style={styles.btn} onPress={handleLogin} disabled={loading}>
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>LOGIN</Text>}
+      </TouchableOpacity>
 
-        <TextInput
-          placeholder="Registered Mobile Number"
-          style={styles.input}
-          keyboardType="phone-pad"
-          value={mobile}
-          onChangeText={setMobile}
-          autoCapitalize="none"
-        />
-        <TextInput
-          placeholder="Password"
-          secureTextEntry
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-        />
-
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Sign In</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+      <TouchableOpacity onPress={() => navigation.navigate('RegisterCriminal')}>
+        <Text style={styles.link}>New Registration? Click Here</Text>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  innerContainer: { flex: 1, justifyContent: 'center', padding: 25 },
-  title: { fontSize: 26, fontWeight: 'bold', textAlign: 'center', color: '#007AFF', marginBottom: 5 },
-  subtitle: { fontSize: 14, textAlign: 'center', color: '#8E8E93', marginBottom: 40, letterSpacing: 1 },
-  input: { backgroundColor: '#F2F2F7', padding: 18, borderRadius: 12, marginBottom: 15, fontSize: 16 },
-  button: { backgroundColor: '#007AFF', padding: 18, borderRadius: 12, alignItems: 'center', marginTop: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
-  buttonDisabled: { backgroundColor: '#A2CFFE' },
-  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 18 }
+  container: { flex: 1, justifyContent: 'center', padding: 30, backgroundColor: '#fff' },
+  logo: { fontSize: 32, fontWeight: 'bold', textAlign: 'center', marginBottom: 40, color: '#d32f2f' },
+  input: { backgroundColor: '#f5f5f5', padding: 15, borderRadius: 10, marginBottom: 15 },
+  btn: { backgroundColor: '#d32f2f', padding: 18, borderRadius: 10, alignItems: 'center' },
+  btnText: { color: '#fff', fontWeight: 'bold' },
+  link: { color: '#007AFF', textAlign: 'center', marginTop: 20 }
 });
 
 export default LoginScreen;

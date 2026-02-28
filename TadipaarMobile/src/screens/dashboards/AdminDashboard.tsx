@@ -11,12 +11,16 @@ const AdminDashboard = ({ navigation }: any) => {
         <Text style={[styles.analyticsText, {color: 'red'}]}>Active Breaches: 2</Text>
       </View>
 
-      <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('CreateCriminalAccount')}>
+      <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('RegisterCriminal')}>
         <Text style={styles.btnText}>Register New Individual</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('MapBoundary')}>
         <Text style={styles.btnText}>Live District Monitoring</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('CriminalList')}>
+        <Text style={styles.btnText}>Criminal List</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={[styles.btn, {backgroundColor: '#8E8E93'}]} onPress={() => navigation.replace('Login')}>
