@@ -40,10 +40,6 @@ const LoginScreen = ({ navigation }: any) => {
       <TouchableOpacity style={styles.btn} onPress={handleLogin} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>LOGIN</Text>}
       </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigation.navigate('RegisterCriminal')}>
-        <Text style={styles.link}>New Registration? Click Here</Text>
-      </TouchableOpacity>
     </View>
   );
 };

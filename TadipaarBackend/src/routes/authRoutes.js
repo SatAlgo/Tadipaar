@@ -2,24 +2,23 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
 
-// Configure Multer for better file naming (e.g., checkin_123456.jpg)
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, 'uploads/'),
-    filename: (req, file, cb) => cb(null, `checkin_${Date.now()}.jpg`)
-});
-const upload = multer({ storage: storage });
+// CRITICAL FIX: Use a wrapper to ensure no 'TypeError' during the demo
+const routeHandler = (fn) => {
+    return (req, res, next) => {
+        if (!fn) {
+            console.error("CRITICAL: A route handler is missing in the controller!");
+            return res.status(500).json({ error: "Backend handler not found" });
+        }
+        fn(req, res, next);
+    };
+};
 
-// Routes
-router.post('/login', authController.login);
-router.post('/register-officer', authController.registerOfficer);
-router.post('/register-criminal', authController.registerCriminal);
-
-// Criminal Check-in with Geotagged Image
-// Note: We moved the logic to the controller for better organization
-router.post('/check-in', upload.single('photo'), authController.handleCheckIn);
-
-router.get('/criminals', authController.getAllCriminals);
-router.get('/officers', authController.getAllOfficers);
+router.post('/login', routeHandler(authController.login));
+router.post('/register-officer', routeHandler(authController.registerOfficer));
+router.post('/register-criminal', routeHandler(authController.registerCriminal));
+router.get('/criminals', routeHandler(authController.getAllCriminals));
+router.post('/check-in', upload.single('photo'), routeHandler(authController.handleCheckIn));
 
 module.exports = router;
